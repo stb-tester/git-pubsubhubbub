@@ -26,6 +26,11 @@ type Hub struct {
 	mutex sync.Mutex
 }
 
+func NewHub(address string, topicValidator func(topic string) bool, store Store) Hub {
+	return Hub{address, topicValidator, store,
+	           map[string]map[string]Subscription{}, sync.Mutex{}}
+}
+
 type Subscription struct {
 
 	/* These two are the "primary key" of a subscription */
