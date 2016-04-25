@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"git-pubsubhubbub/pushhub"
 	"os"
 	"os/exec"
 )
@@ -69,11 +70,11 @@ func main() {
 
 	fmt.Printf("Serving pubsubhubbub on http://%s%s/push\n", *address, prefix)
 
-	hub := Hub{
+	hub := pushhub.Hub{
 		*address,
 		func (topic string) bool {return topic == prefix + "/push"},
-		NullStore{},
-		map[string]map[string]Subscription{},
+		pushhub.NullStore{},
+		map[string]map[string]pushhub.Subscription{},
 	}
 
 	http.HandleFunc(prefix + "/push", hub.HandleRequest)
