@@ -36,14 +36,15 @@ func serve() int {
 		log.Printf("FATAL: git failed: %s\n", err);
 		return 1
 	}
-	toplevel := string(toplevelb[:len(toplevelb)-1]); /* strip trailing newline */
-
+	var toplevel string;
 	if (toplevel == "") {
 		/* This can happen if run from a bare repo */
 		if toplevel, err = filepath.Abs(string(git_dir)); err != nil {
 			log.Printf("FATAL: filepath.Abs failed: %s\n", err);
 			return 1
 		}
+	} else {
+		toplevel = string(toplevelb[:len(toplevelb)-1]); /* strip trailing newline */
 	}
 
 	repo_name := filepath.Base(toplevel);
