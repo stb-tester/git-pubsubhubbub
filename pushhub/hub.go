@@ -9,9 +9,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
 	"time"
 )
@@ -62,7 +62,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 			req, err := http.NewRequest("POST", sub.callback.String(),
 				                        bytes.NewReader(payload))
 			if err != nil {
-				fmt.Fprintln(os.Stderr, "Failed to create POST request for %s", sub.callback.String())
+				log.Printf("Failed to create POST request for %s", sub.callback.String())
 				return
 			}
 			req.Header.Add("X-Hub-Signature", x_hub_signature)
@@ -85,7 +85,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 					errmsg = fmt.Sprintf("error %s", err)
 				}
 
-				fmt.Fprintln(os.Stderr, "Notifying %s failed with %s.  Retrying after %is", sub.callback.String(), errmsg, sleep_secs)
+				log.Printf("Notifying %s failed with %s.  Retrying after %is", sub.callback.String(), errmsg, sleep_secs)
 
 				/* Exponential backoff: */
 				time.Sleep(sleep_secs)
@@ -123,7 +123,7 @@ func verify(mode string, sub Subscription) error {
 
 	res, err := http.Get(request_url.String())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Verification failed: GETting callback URL %s failed: %s", sub.callback.String(), err)
+		log.Printf("INFO: Verification failed: GETting callback URL %s failed: %s", sub.callback.String(), err)
 		return err
 	}
 
@@ -131,15 +131,17 @@ func verify(mode string, sub Subscription) error {
 	body, err := ioutil.ReadAll(res.Body)
 
 	if !bytes.Equal(body, []byte(challenge)) {
-		fmt.Fprintln(os.Stderr, "Verification failed: Callback URL %s did not respond with challenge.  Received %s instead", sub.callback, body)
+		log.Printf("INFO: Verification failed: Callback URL %s did not respond with challenge.  Received %s instead\n", sub.callback, body)
 		return errors.New("Verification Failed")
 	}
 
-	fmt.Fprintln(os.Stderr, "Verification of %s %s, %s succeeded", mode, sub.topic, sub.callback.String());
+	log.Printf("INFO: Verification of %s %s, %s succeeded\n", mode, sub.topic, sub.callback.String());
 	return nil;
 }
 
 func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
+	log.Printf("INFO: Received request %s", *r)
+
 	if r.Method != "POST" {
 		http.Error(w, fmt.Sprintf("Invalid method '%s'.  You must use method 'POST'", r.Method), http.StatusMethodNotAllowed)
 		return
@@ -152,6 +154,7 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	 * lease_seconds := r.FormValue("hub.lease_seconds") */
 
 	if !hub.topicValidator(topic) {
+		log.Print("INFO: ", mode, " Failed: Unknown topic ", topic)
 		http.Error(w, fmt.Sprintf("Unknown topic '%s'", topic), http.StatusBadRequest)
 		return
 	}
@@ -177,7 +180,7 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("pubsubhubbub %s accepted, verifying", mode)))
 
 	if err := verify(mode, sub); err != nil {
-		fmt.Fprintln(os.Stderr, "Verifiying %s request for (%s, %s) failed: %s", mode, topic, callback, err)
+		log.Printf("INFO: Verifiying %s request for (%s, %s) failed: %s", mode, topic, callback, err)
 		return;
 	}
 
@@ -185,12 +188,14 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	defer hub.mutex.Unlock()
 	switch mode {
 	case "subscribe":
+		log.Print("INFO: Subscription successful: ", sub.callback)
 		if hub.subscriptions[sub.topic] == nil {
 			hub.subscriptions[sub.topic] = map[string]Subscription{}
 		}
 		hub.subscriptions[sub.topic][sub.callback.String()] = sub
 		hub.store.Subscribe([]Subscription{sub});
 	case "unsubscribe":
+		log.Print("INFO: Unsubscription successful: ", sub.callback)
 		delete(hub.subscriptions[sub.topic], sub.callback.String())
 		if len(hub.subscriptions[sub.topic]) == 0 {
 			delete(hub.subscriptions, sub.topic)
