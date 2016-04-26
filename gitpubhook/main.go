@@ -132,6 +132,8 @@ func serve() int {
 	fmt.Printf("Serving pubsubhubbub on http://%s%s\n", *address, *hub_endpoint)
 	fmt.Printf("Available topics:\n    %s\n", topic)
 
+	http.HandleFunc(*hub_endpoint, hub.HandleRequest)
+
 	if err := http.ListenAndServe(*address, nil); err != nil {
 		log.Printf("FATAL: Serving failed: %s\n", err);
 		return 1
