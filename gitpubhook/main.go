@@ -20,8 +20,9 @@ import (
 )
 
 func serve() int {
-	prefixp := flag.String("prefix", "", "HTTP endpoint prefix");
-	address := flag.String("address", ":8080", "Address to listen on");
+	address := flag.String("listen", ":8080", "Address to listen on");
+	hub_endpoint := flag.String("hub-endpoint", "/hub", "The endpoint to which subscription requests must be sent");
+	topic_prefix := flag.String("topic-prefix", "http://localhost:8080/", "HTTP endpoint prefix under which your topics will appear")
 
 	flag.Parse();
 
@@ -48,12 +49,7 @@ func serve() int {
 	}
 
 	repo_name := filepath.Base(toplevel);
-	var prefix string;
-	if *prefixp != "" {
-		prefix = *prefixp;
-	} else {
-		prefix = "/" + repo_name + "/events"
-	}
+	topic := *topic_prefix + repo_name + "/events/push"
 
 	/* Generate nonce that will be used to confirm that HTTP POSTs in to this
 	 * process are from the git hooks.  This is saved with great care with
@@ -67,11 +63,11 @@ func serve() int {
 
 	hub := pushhub.NewHub(
 		*address,
-		func (topic string) bool {return topic == prefix + "/push"},
+		func (topic_ string) bool {return topic_ == topic},
 		pushhub.NullStore{})
 
 	hookCallbackAddress, err := listenForHookCallbacks(
-	    nonce, prefix + "/push", &hub)
+	    nonce, topic, &hub)
 	if err != nil {
 		log.Fatal("Listening for hook callbacks on localhost failed", err)
 		os.Exit(1)
