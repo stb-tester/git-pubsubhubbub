@@ -198,8 +198,8 @@ func hook() int {
 		return 1
 	}
 	a := strings.Split(string(data), " ")
-	nonce := a[0]
-	endpoint := a[1]
+	endpoint := a[0]
+	nonce := a[1]
 
 	req, err := http.NewRequest("POST", endpoint, os.Stdin)
 	if err != nil {
