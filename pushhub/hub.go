@@ -185,6 +185,9 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	defer hub.mutex.Unlock()
 	switch mode {
 	case "subscribe":
+		if hub.subscriptions[sub.topic] == nil {
+			hub.subscriptions[sub.topic] = map[string]Subscription{}
+		}
 		hub.subscriptions[sub.topic][sub.callback.String()] = sub
 		hub.store.Subscribe([]Subscription{sub});
 	case "unsubscribe":
