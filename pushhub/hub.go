@@ -113,12 +113,13 @@ func verify(mode string, sub Subscription) error {
 	challenge := hex.EncodeToString(challenge_bytes);
 
 	request_url := sub.callback
-	request_url.Query().Add("hub.mode", mode);
-	request_url.Query().Add("hub.topic", sub.topic);
-	request_url.Query().Add("hub.challenge", challenge);
-	request_url.Query().Add(
-		"hub.lease_seconds",
-		fmt.Sprintf("%i", time.Now().Sub(sub.lease_expires).Seconds()));
+	q := request_url.Query()
+	q.Set("hub.mode", mode);
+	q.Set("hub.topic", sub.topic);
+	q.Set("hub.challenge", challenge);
+	q.Set("hub.lease_seconds",
+	      fmt.Sprintf("%d", int(sub.lease_expires.Sub(time.Now()).Seconds())));
+	request_url.RawQuery = q.Encode()
 
 	res, err := http.Get(request_url.String())
 	if err != nil {
