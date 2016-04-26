@@ -121,9 +121,11 @@ func serve() int {
 		          "create one")
 		return 1
 	}
-	if err := os.Symlink(selfpath, hook); err != nil {
-		log.Fatal("Couldn't create hook ", hook, ": ", err)
-		return 1
+	if link != selfpath {
+		if err := os.Symlink(selfpath, hook); err != nil {
+			log.Fatal("Couldn't create hook ", hook, ": ", err)
+			return 1
+		}
 	}
 	defer func() {
 		if l, _ := os.Readlink(hook); l == selfpath {
