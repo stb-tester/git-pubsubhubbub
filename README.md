@@ -1,3 +1,19 @@
+DO NOT USE YET
+==============
+
+It's not ready.  TODO before it's more generally encouraged for use:
+
+- [ ] Add automated tests
+- [ ] Record subscribers on disk so it can be restarted without losing its
+  subscriber list (alternatively just drop the lease interval to something much
+  shorter).
+- [ ] Document gitweb integration
+- [ ] Update documentation in README to reflect actual usage
+- [ ] Test the security mechanisms: secret HMAC and file permission dance
+- [ ] Create binaries
+- [ ] Test unsubscribe
+- [ ] Provide github-style callbacks, rather than just the post-receive output
+
 git-pubsubhubbub
 ================
 
