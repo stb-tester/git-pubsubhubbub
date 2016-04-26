@@ -83,3 +83,17 @@ With gitweb
 
 Licence
 =======
+
+Dual licence GPLv2 and 3-clause BSD.
+
+The GPLv2 was chosen to make it easier to put into the upstream git project
+proper.
+
+The BSD licence was chosen to make it easier to split the pubsubhubbub hub bits
+into its own go package to allow other people to reuse.  This is the same
+licence that the go language/tooling is released under.
+
+The BSD licence was also chosen to allow this to be as broadly distributed as
+possible.  I'd like there to be one standard way of receiving change
+notifications from a git repo over a network, so I want to remove any reason
+someone would have to not run this software.
