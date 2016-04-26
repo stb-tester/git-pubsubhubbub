@@ -268,7 +268,7 @@ func listenForHookCallbacks(nonce string, topic string, hub *pushhub.Hub) (strin
 	}
 
 	go func () {
-		err = http.Serve(listener, nil)
+		err = http.Serve(listener, mux)
 		if err != nil {
 			log.Fatal("FATAL: http.Serve on local hook callback failed: ", err)
 		}
