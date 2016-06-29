@@ -1,7 +1,6 @@
-package tests
+package pushhub
 
 import (
-	"git-pubsubhubbub/pushhub"
 	"github.com/stretchr/testify/assert"
 	"net"
 	"net/http"
@@ -12,16 +11,16 @@ import (
 
 type TestHub struct {
 	Address  string
-	Hub      *pushhub.Hub
+	Hub      *Hub
 	listener *net.IPConn
 	t        *testing.T
 }
 
 func testSetup(t *testing.T, callback func(w http.ResponseWriter, r *http.Request)) *TestHub {
-	hub := pushhub.NewHub(
+	hub := NewHub(
 		*address,
 		func(topic_ string) bool { return topic_ == topic },
-		pushhub.NullStore{})
+		NullStore{})
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hub", hub.HandleRequest)

@@ -8,9 +8,9 @@ git-pubsubhubbub : main.go pushhub/hub.go pushhub/store.go
 testclient/testclient : testclient/testclient.go
 	cd testclient && go build
 
-check : gitpubhook/gitpubhook testclient/testclient
+check : git-pubsubhubbub testclient/testclient
 	if [ -n "$$(gofmt -l .)" ]; then gofmt -d .; exit 1; fi
-	cd tests && GOPATH=$(CURDIR)/../.. go test
+	go test
 
 clean :
 	rm -f git-pubsubhubbub testclient/testclient
