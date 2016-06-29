@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"git-pubsubhubbub/pushhub"
+	"github.com/stb-tester/git-pubsubhubbub/pushhub"
 	"io"
 	"io/ioutil"
 	"log"

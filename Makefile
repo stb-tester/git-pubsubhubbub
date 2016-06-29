@@ -1,16 +1,21 @@
-all : gitpubhook/gitpubhook
+all : git-pubsubhubbub
 
-gitpubhook/gitpubhook : gitpubhook/main.go pushhub/hub.go pushhub/store.go
-	cd gitpubhook && GOPATH=$(CURDIR)/../.. go build
+export GOPATH=$(CURDIR)/../../../..
+
+git-pubsubhubbub : main.go pushhub/hub.go pushhub/store.go
+	go build
 
 testclient/testclient : testclient/testclient.go
-	cd testclient && GOPATH=$(CURDIR)/../.. go build
+	cd testclient && go build
 
 check :
 	if [ -n "$$(gofmt -l .)" ]; then gofmt -d .; exit 1; fi
 
 clean :
-	rm -f gitpubhook/gitpubhook testclient/testclient
+	rm -f git-pubsubhubbub testclient/testclient
 
-install :
-	install gitpubhook/gitpubhook $(DESTDIR)$(prefix)/bin/git-pubsubhubbub
+deps :
+	go get
+
+install : git-pubsubhubbub
+	install git-pubsubhubbub $(DESTDIR)$(prefix)/bin/git-pubsubhubbub
