@@ -28,7 +28,7 @@ func serve() int {
 
 	git_dir, err := gitDir()
 	if err != nil {
-		log.printf("FATAL: git failed: %s\n");
+		log.Printf("FATAL: git failed: %s\n");
 		return 1
 	}
 
