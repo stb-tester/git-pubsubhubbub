@@ -2,9 +2,9 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"flag"
 	"fmt"
-	"encoding/hex"
 	"git-pubsubhubbub/pushhub"
 	"io"
 	"io/ioutil"
@@ -20,35 +20,35 @@ import (
 )
 
 func serve() int {
-	address := flag.String("listen", ":8080", "Address to listen on");
-	hub_endpoint := flag.String("hub-endpoint", "/hub", "The endpoint to which subscription requests must be sent");
+	address := flag.String("listen", ":8080", "Address to listen on")
+	hub_endpoint := flag.String("hub-endpoint", "/hub", "The endpoint to which subscription requests must be sent")
 	topic_prefix := flag.String("topic-prefix", "http://localhost:8080/", "HTTP endpoint prefix under which your topics will appear")
 
-	flag.Parse();
+	flag.Parse()
 
 	git_dir, err := gitDir()
 	if err != nil {
-		log.Printf("FATAL: git failed: %s\n");
+		log.Printf("FATAL: git failed: %s\n")
 		return 1
 	}
 
-	toplevelb, err := exec.Command("git", "rev-parse", "--show-toplevel").Output();
+	toplevelb, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
-		log.Printf("FATAL: git failed: %s\n", err);
+		log.Printf("FATAL: git failed: %s\n", err)
 		return 1
 	}
-	var toplevel string;
-	if (toplevel == "") {
+	var toplevel string
+	if toplevel == "" {
 		/* This can happen if run from a bare repo */
 		if toplevel, err = filepath.Abs(string(git_dir)); err != nil {
-			log.Printf("FATAL: filepath.Abs failed: %s\n", err);
+			log.Printf("FATAL: filepath.Abs failed: %s\n", err)
 			return 1
 		}
 	} else {
-		toplevel = string(toplevelb[:len(toplevelb)-1]); /* strip trailing newline */
+		toplevel = string(toplevelb[:len(toplevelb)-1]) /* strip trailing newline */
 	}
 
-	repo_name := filepath.Base(toplevel);
+	repo_name := filepath.Base(toplevel)
 	topic := *topic_prefix + repo_name + "/events/push"
 
 	/* Generate nonce that will be used to confirm that HTTP POSTs in to this
@@ -59,15 +59,15 @@ func serve() int {
 		log.Printf("FATAL: Failed to generate nonce: %s", err)
 		return 1
 	}
-	nonce := hex.EncodeToString(nonce_bytes);
+	nonce := hex.EncodeToString(nonce_bytes)
 
 	hub := pushhub.NewHub(
 		*address,
-		func (topic_ string) bool {return topic_ == topic},
+		func(topic_ string) bool { return topic_ == topic },
 		pushhub.NullStore{})
 
 	hookCallbackAddress, err := listenForHookCallbacks(
-	    nonce, topic, &hub)
+		nonce, topic, &hub)
 	if err != nil {
 		log.Fatal("Listening for hook callbacks on localhost failed", err)
 		os.Exit(1)
@@ -86,10 +86,10 @@ func serve() int {
 	nonce_filename := string(git_dir) + "/git-pubsubhubbub.txt"
 	nonce_mode := 0200 | ((git_stat.Mode() & 0222) << 1)
 	err = writeFileExcl(nonce_filename,
-	                    []byte("http://" + hookCallbackAddress + "/ " + nonce),
-	                    nonce_mode,
-	                    int(git_stat.Sys().(*syscall.Stat_t).Uid),
-	                    int(git_stat.Sys().(*syscall.Stat_t).Gid))
+		[]byte("http://"+hookCallbackAddress+"/ "+nonce),
+		nonce_mode,
+		int(git_stat.Sys().(*syscall.Stat_t).Uid),
+		int(git_stat.Sys().(*syscall.Stat_t).Gid))
 	if err != nil {
 		log.Printf("FATAL: Failed to write pubsubhubbub nonce: %s", err)
 		return 1
@@ -114,7 +114,7 @@ func serve() int {
 	link, err := os.Readlink(hook)
 	if err != nil && !os.IsNotExist(err) || err == nil && link != selfpath {
 		log.Fatal("post-receive hook already exists in this repo, refusing to ",
-		          "create one")
+			"create one")
 		return 1
 	}
 	if link != selfpath {
@@ -135,19 +135,18 @@ func serve() int {
 	http.HandleFunc(*hub_endpoint, hub.HandleRequest)
 
 	if err := http.ListenAndServe(*address, nil); err != nil {
-		log.Printf("FATAL: Serving failed: %s\n", err);
+		log.Printf("FATAL: Serving failed: %s\n", err)
 		return 1
 	}
 	return 0
 }
-
 
 func writeFileExcl(name string, data []byte, perm os.FileMode, uid int, gid int) error {
 	if err := os.RemoveAll(name); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(name, os.O_WRONLY | os.O_CREATE | os.O_EXCL, 0200)
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0200)
 	if err != nil {
 		return err
 	}
@@ -158,10 +157,10 @@ func writeFileExcl(name string, data []byte, perm os.FileMode, uid int, gid int)
 		return err
 	}
 
-	if (int(statinfo.Sys().(*syscall.Stat_t).Uid) != uid ||
-	        int(statinfo.Sys().(*syscall.Stat_t).Gid) != gid) {
+	if int(statinfo.Sys().(*syscall.Stat_t).Uid) != uid ||
+		int(statinfo.Sys().(*syscall.Stat_t).Gid) != gid {
 		if err := f.Chown(uid, gid); err != nil {
-			log.Printf("FATAL: Cannot create nonce file: We must be running with same uid and gid as the git dir, be running as root or have the CAP_CHOWN capability: %s\n", err);
+			log.Printf("FATAL: Cannot create nonce file: We must be running with same uid and gid as the git dir, be running as root or have the CAP_CHOWN capability: %s\n", err)
 			os.Remove(name)
 			return err
 		}
@@ -186,7 +185,7 @@ func writeFileExcl(name string, data []byte, perm os.FileMode, uid int, gid int)
 func hook() int {
 	git_dir, err := gitDir()
 	if err != nil {
-		log.Printf("FATAL: Couldn't find git dir: %s\n", err);
+		log.Printf("FATAL: Couldn't find git dir: %s\n", err)
 		return 1
 	}
 
@@ -230,7 +229,7 @@ func hook() int {
 
 func listenForHookCallbacks(nonce string, topic string, hub *pushhub.Hub) (string, error) {
 	/* Called in response to receiving a POST from hook() */
-	callback := func (w http.ResponseWriter, r *http.Request) {
+	callback := func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("INFO: Received hook callback from %s\n", r.RemoteAddr)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -269,19 +268,19 @@ func listenForHookCallbacks(nonce string, topic string, hub *pushhub.Hub) (strin
 		return "", err
 	}
 
-	go func () {
+	go func() {
 		err = http.Serve(listener, mux)
 		if err != nil {
 			log.Fatal("FATAL: http.Serve on local hook callback failed: ", err)
 		}
-	} ()
+	}()
 	return listener.Addr().String(), nil
 }
 
 func gitDir() (string, error) {
-	git_dir, err := exec.Command("git", "rev-parse", "--git-dir").Output();
+	git_dir, err := exec.Command("git", "rev-parse", "--git-dir").Output()
 	if err != nil {
-		log.Printf("WARN: git failed: %s\n", err);
+		log.Printf("WARN: git failed: %s\n", err)
 		return "", err
 	}
 	return string(git_dir[:len(git_dir)-1]), nil /* strip trailing newline */

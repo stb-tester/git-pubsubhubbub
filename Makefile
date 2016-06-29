@@ -6,8 +6,8 @@ gitpubhook/gitpubhook : gitpubhook/main.go pushhub/hub.go pushhub/store.go
 testclient/testclient : testclient/testclient.go
 	cd testclient && GOPATH=$(CURDIR)/../.. go build
 
-check : gitpubhook/gitpubhook testclient/testclient
-	true
+check :
+	if [ -n "$$(gofmt -l .)" ]; then gofmt -d .; exit 1; fi
 
 clean :
 	rm -f gitpubhook/gitpubhook testclient/testclient

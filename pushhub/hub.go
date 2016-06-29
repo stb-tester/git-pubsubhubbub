@@ -2,11 +2,11 @@ package pushhub
 
 import (
 	"bytes"
-	"errors"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -19,22 +19,22 @@ import (
 const LEASE_DURATION = 3 * time.Hour
 
 type Hub struct {
-	address string
+	address        string
 	topicValidator func(topic string) bool
-	store Store
-	subscriptions map[string]map[string]Subscription
-	mutex sync.Mutex
+	store          Store
+	subscriptions  map[string]map[string]Subscription
+	mutex          sync.Mutex
 }
 
 func NewHub(address string, topicValidator func(topic string) bool, store Store) Hub {
 	return Hub{address, topicValidator, store,
-	           map[string]map[string]Subscription{}, sync.Mutex{}}
+		map[string]map[string]Subscription{}, sync.Mutex{}}
 }
 
 type Subscription struct {
 
 	/* These two are the "primary key" of a subscription */
-	topic string
+	topic    string
 	callback url.URL
 
 	/* Specified by them for secure callbacks: */
@@ -42,7 +42,7 @@ type Subscription struct {
 
 	/* Specified by us to disconnect old clients: */
 	lease_expires time.Time
-};
+}
 
 func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 	now := time.Now()
@@ -60,7 +60,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 			x_hub_signature := "sha1=" + hex.EncodeToString(sub_hmac.Sum(nil))
 
 			req, err := http.NewRequest("POST", sub.callback.String(),
-				                        bytes.NewReader(payload))
+				bytes.NewReader(payload))
 			if err != nil {
 				log.Printf("Failed to create POST request for %s", sub.callback.String())
 				return
@@ -78,7 +78,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 				if err == nil {
 					if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 						return
-					} else { 
+					} else {
 						errmsg = fmt.Sprintf("status code %i", resp.StatusCode)
 					}
 				} else {
@@ -91,7 +91,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 				time.Sleep(sleep_secs)
 				sleep_secs *= 2
 			}
-		} ();
+		}()
 	}
 
 	if len(for_removal) > 0 {
@@ -100,7 +100,7 @@ func (sl Hub) Notify(topic string, mimetype string, payload []byte) error {
 			delete(sl.subscriptions[topic], v.callback.String())
 		}
 	}
-	return nil;
+	return nil
 }
 
 func verify(mode string, sub Subscription) error {
@@ -110,15 +110,15 @@ func verify(mode string, sub Subscription) error {
 	}
 	/* I want our challenge to be a string of ascii to reduce the chances that
 	   we trip clients up with escape sequences or URL encoding, etc. */
-	challenge := hex.EncodeToString(challenge_bytes);
+	challenge := hex.EncodeToString(challenge_bytes)
 
 	request_url := sub.callback
 	q := request_url.Query()
-	q.Set("hub.mode", mode);
-	q.Set("hub.topic", sub.topic);
-	q.Set("hub.challenge", challenge);
+	q.Set("hub.mode", mode)
+	q.Set("hub.topic", sub.topic)
+	q.Set("hub.challenge", challenge)
 	q.Set("hub.lease_seconds",
-	      fmt.Sprintf("%d", int(sub.lease_expires.Sub(time.Now()).Seconds())));
+		fmt.Sprintf("%d", int(sub.lease_expires.Sub(time.Now()).Seconds())))
 	request_url.RawQuery = q.Encode()
 
 	res, err := http.Get(request_url.String())
@@ -135,8 +135,8 @@ func verify(mode string, sub Subscription) error {
 		return errors.New("Verification Failed")
 	}
 
-	log.Printf("INFO: Verification of %s %s, %s succeeded\n", mode, sub.topic, sub.callback.String());
-	return nil;
+	log.Printf("INFO: Verification of %s %s, %s succeeded\n", mode, sub.topic, sub.callback.String())
+	return nil
 }
 
 func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
@@ -174,14 +174,14 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub := Subscription{topic, *parsed_url, secret, time.Now().Add(LEASE_DURATION)};
+	sub := Subscription{topic, *parsed_url, secret, time.Now().Add(LEASE_DURATION)}
 
-	w.WriteHeader(http.StatusAccepted);
+	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte(fmt.Sprintf("pubsubhubbub %s accepted, verifying", mode)))
 
 	if err := verify(mode, sub); err != nil {
 		log.Printf("INFO: Verifiying %s request for (%s, %s) failed: %s", mode, topic, callback, err)
-		return;
+		return
 	}
 
 	hub.mutex.Lock()
@@ -193,13 +193,13 @@ func (hub Hub) HandleRequest(w http.ResponseWriter, r *http.Request) {
 			hub.subscriptions[sub.topic] = map[string]Subscription{}
 		}
 		hub.subscriptions[sub.topic][sub.callback.String()] = sub
-		hub.store.Subscribe([]Subscription{sub});
+		hub.store.Subscribe([]Subscription{sub})
 	case "unsubscribe":
 		log.Print("INFO: Unsubscription successful: ", sub.callback)
 		delete(hub.subscriptions[sub.topic], sub.callback.String())
 		if len(hub.subscriptions[sub.topic]) == 0 {
 			delete(hub.subscriptions, sub.topic)
 		}
-		hub.store.Unsubscribe([]Subscription{sub});
+		hub.store.Unsubscribe([]Subscription{sub})
 	}
 }
